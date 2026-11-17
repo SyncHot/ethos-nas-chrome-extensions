@@ -24,7 +24,8 @@ SKIP_DIRS = {".git", "node_modules", "dist", "__pycache__"}
 # Permissions the feature actually needs. Anything else must be added
 # deliberately to this list in the same commit as the manifest change.
 ALLOWED_PERMISSIONS = {
-    "activeTab", "contextMenus", "downloads", "notifications", "scripting", "storage",
+    "activeTab", "clipboardRead", "contextMenus", "downloads", "notifications",
+    "scripting", "storage",
 }
 
 
@@ -67,6 +68,7 @@ def main() -> int:
     check("permissions are allowlisted", permissions <= ALLOWED_PERMISSIONS,
           f"unexpected: {sorted(permissions - ALLOWED_PERMISSIONS)}")
     check("capture needs downloads+storage", {"downloads", "storage"} <= permissions)
+    check("clipboard auto-fill needs clipboardRead", "clipboardRead" in permissions)
     hosts = manifest.get("host_permissions") or []
     check("host permissions are http(s) only",
           bool(hosts) and all(re.fullmatch(r"https?://[^/]+/\*", h) for h in hosts), str(hosts))

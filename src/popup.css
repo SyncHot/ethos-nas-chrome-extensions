@@ -167,6 +167,7 @@ input::placeholder { color: var(--muted); opacity: .8; }
 
 .kind { font-size: 11.5px; color: var(--muted); margin-top: -4px; }
 .kind strong { color: var(--text); font-weight: 600; }
+.kind-note { font-size: 11px; color: var(--ok, #3fb950); margin-top: 2px; }
 
 .advanced {
   border: 1px solid var(--border);

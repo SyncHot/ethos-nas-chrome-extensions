@@ -9,6 +9,10 @@ countdown (downTURK, link protectors, file-host landing pages): right-click → 
 links on this page**, or let the extension take over the browser download once the final
 URL appears.
 
+Opening the popup with a copied download link in the clipboard fills the URL field
+automatically (**Use the clipboard** in the options, on by default) — copy a link on any
+page, click the toolbar icon, hit *Send to NAS*.
+
 This is the browser-extension companion of the EthOS NAS core
 ([`SyncHot/ethos-nas`](https://github.com/SyncHot/ethos-nas)). It only uses the public
 `/api/downloads/*` API, so it works against any EthOS NAS version that has the Download
@@ -17,7 +21,7 @@ Manager.
 ```
 .
 ├── manifest.json          MV3 manifest (permissions: contextMenus, storage, downloads,
-│                          notifications, activeTab, scripting; host: http/https)
+│                          notifications, activeTab, scripting, clipboardRead; host: http/https)
 ├── src/
 │   ├── background.js      service worker: API calls, context menus, download capture
 │   ├── content.js         collects anchors, intercepts magnet/file-link clicks

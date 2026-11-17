@@ -93,6 +93,11 @@ const STUB = `
     },
     action: { setBadgeText: () => {}, setBadgeBackgroundColor: () => {} },
   };
+  // Clipboard auto-fill: deterministic content, no browser permission prompt.
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { readText: async () => window.__clipboard ?? "https://rapidgator.net/file/7/clip.zip" },
+  });
 })();
 `;
 
@@ -171,6 +176,11 @@ async function run(base) {
     check("popup: history rendered", (await page.$$("#history li")).length === 1);
     check("popup: footer shows NAS URL",
       (await page.$eval("#footer-note", (el) => el.textContent)).includes("127.0.0.1:9000"));
+
+    check("popup: clipboard link prefilled",
+      (await page.$eval("#url", (el) => el.value)) === "https://rapidgator.net/file/7/clip.zip");
+    check("popup: clipboard note shown",
+      !(await page.$eval("#clipboard-note", (el) => el.classList.contains("hidden"))));
 
     await page.$eval("#url", (el) => { el.value = "magnet:?xt=urn:btih:abc&dn=x"; el.dispatchEvent(new Event("input")); });
     check("popup: magnet classified", (await page.$eval("#kind", (el) => el.textContent)).includes("Magnet link"));

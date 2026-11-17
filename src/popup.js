@@ -23,6 +23,9 @@ const KIND_TEXT = {
   other: "Unsupported link",
 };
 
+// Clipboard content is only used when it looks like something we can download.
+const CLIPBOARD_KINDS = new Set(["magnet", "torrent", "filehost", "file"]);
+
 function show(el, visible) {
   el.classList.toggle("hidden", !visible);
 }
@@ -94,7 +97,35 @@ function refreshSendState() {
   $("send").disabled = busy || !hasUrl || !configured();
 }
 
-$("url").addEventListener("input", updateKind);
+/**
+ * Prefill the URL field from the clipboard (JDownloader-style clipboard watch).
+ *
+ * Chrome only lets the popup read the clipboard with the `clipboardRead`
+ * permission; a denied permission or a non-download clipboard is not an error,
+ * the user just types/pastes manually.
+ */
+async function fillFromClipboard() {
+  if (settings.clipboardAuto === false) return false;
+  if ($("url").value.trim()) return false;
+  if (!navigator.clipboard?.readText) return false;
+  let text = "";
+  try {
+    text = (await navigator.clipboard.readText()).trim();
+  } catch {
+    return false; // no permission or empty clipboard — nothing to fill
+  }
+  if (!text || text.length > 8192) return false;
+  const candidate = text.split(/\s+/)[0];
+  if (!CLIPBOARD_KINDS.has(classifyLink(candidate, settings))) return false;
+  $("url").value = candidate;
+  show($("clipboard-note"), true);
+  return true;
+}
+
+$("url").addEventListener("input", () => {
+  show($("clipboard-note"), false);
+  updateKind();
+});
 $("url").addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -436,6 +467,7 @@ async function boot() {
     const kind = classifyLink(tabUrl, settings);
     if (kind !== "page" && kind !== "other") $("url").value = tabUrl;
   }
+  await fillFromClipboard();
 
   renderCategories();
   updateKind();

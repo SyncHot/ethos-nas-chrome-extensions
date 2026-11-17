@@ -99,6 +99,7 @@ function fillForm() {
   $("intercept-downloads").checked = !!settings.interceptDownloads;
   $("intercept-magnet").checked = !!settings.interceptMagnet;
   $("intercept-file-links").checked = !!settings.interceptFileLinks;
+  $("clipboard-auto").checked = settings.clipboardAuto !== false;
   $("notify").checked = !!settings.notify;
 
   for (const radio of document.querySelectorAll('input[name="mode"]')) {
@@ -258,6 +259,7 @@ $("save").addEventListener("click", () => {
       interceptMode: mode,
       interceptMagnet: $("intercept-magnet").checked,
       interceptFileLinks: $("intercept-file-links").checked,
+      clipboardAuto: $("clipboard-auto").checked,
       notify: $("notify").checked,
     };
     if (typedKey) patch.apiKey = typedKey;

@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
   interceptMode: "files", // "files" = only file-ish downloads, "all" = every http(s) download
   interceptMagnet: true,
   interceptFileLinks: false,
+  clipboardAuto: true, // prefill the popup from a link copied to the clipboard
   extensions: [
     "torrent", "rar", "zip", "7z", "tar", "gz", "iso", "img", "mkv", "mp4",
     "avi", "mov", "flac", "mp3", "pdf", "epub", "exe", "msi", "dmg", "apk",
