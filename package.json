@@ -1,0 +1,19 @@
+{
+  "name": "ethos-nas-chrome-extensions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chromium extension that sends links, magnets and browser downloads to the EthOS NAS Download Manager.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SyncHot/ethos-nas-chrome-extensions.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "python3 tests/test_extension.py",
+    "test:ui": "node tests/ui-smoke.js",
+    "package": "python3 package.py"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.3.0"
+  }
+}

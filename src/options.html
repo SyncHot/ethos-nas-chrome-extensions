@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EthOS NAS Downloader — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <img src="../icons/icon48.png" alt="" width="48" height="48">
+      <div>
+        <h1>EthOS NAS Downloader</h1>
+        <p>Send links, magnets and browser downloads to the EthOS NAS Download Manager.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Connection</h2>
+      <label class="field">
+        <span>NAS URL</span>
+        <input id="nas-url" type="text" placeholder="http://192.168.50.215:9000" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="hint">Base address of your EthOS NAS. Use the LAN address of the machine running the NAS.</p>
+      <div class="row">
+        <button id="test" class="primary" type="button">Test connection</button>
+        <button id="open-nas" class="ghost" type="button">Open NAS</button>
+        <span id="test-status" class="status"></span>
+      </div>
+
+      <hr>
+
+      <h3>Sign in with your NAS account</h3>
+      <p class="hint">
+        The password is used once against the NAS login and never stored; the extension keeps the
+        long-lived API key instead.
+      </p>
+      <div class="grid2">
+        <label class="field">
+          <span>Username</span>
+          <input id="username" type="text" autocomplete="username">
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="password" type="password" autocomplete="current-password">
+        </label>
+      </div>
+      <div class="row">
+        <button id="signin" class="primary" type="button">Sign in &amp; store key</button>
+        <span id="signin-status" class="status"></span>
+      </div>
+
+      <hr>
+
+      <label class="field">
+        <span>API key</span>
+        <input id="api-key" type="password" placeholder="ethos_…" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="hint" id="key-hint">
+        Copy it from <em>NAS → Settings → Security → API key</em>. Leave this field empty to keep the
+        key that is already stored.
+      </p>
+      <div class="row">
+        <button id="clear-key" class="danger" type="button">Forget stored key</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Defaults</h2>
+      <div class="grid2">
+        <label class="field">
+          <span>Category</span>
+          <select id="category"></select>
+        </label>
+        <label class="field">
+          <span>Folder</span>
+          <input id="folder" type="text" placeholder="NAS default download folder" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <p class="hint" id="config-hint">Categories are read from the NAS download settings.</p>
+    </section>
+
+    <section class="card">
+      <h2>Capture</h2>
+
+      <label class="switch">
+        <input id="intercept-downloads" type="checkbox">
+        <span>
+          <strong>Take over browser downloads</strong>
+          <small>Cancel matching downloads and send the resolved URL to the NAS instead.</small>
+        </span>
+      </label>
+
+      <div class="modes" id="mode-group">
+        <label class="radio"><input type="radio" name="mode" value="files"> Only downloads that look like files</label>
+        <label class="radio"><input type="radio" name="mode" value="all"> All http(s) downloads</label>
+      </div>
+
+      <label class="switch">
+        <input id="intercept-magnet" type="checkbox">
+        <span>
+          <strong>Intercept magnet links</strong>
+          <small>Clicking a <code>magnet:</code> link sends it to the NAS instead of the browser.</small>
+        </span>
+      </label>
+
+      <label class="switch">
+        <input id="intercept-file-links" type="checkbox">
+        <span>
+          <strong>Intercept direct file links</strong>
+          <small>Clicking a link to a matching file extension sends it to the NAS in the background.</small>
+        </span>
+      </label>
+
+      <label class="field">
+        <span>File extensions considered “files”</span>
+        <textarea id="extensions" rows="3" spellcheck="false"></textarea>
+      </label>
+      <p class="hint">Comma or space separated, without the dot. Used for capture and for ranking page links.</p>
+
+      <label class="switch">
+        <input id="notify" type="checkbox">
+        <span>
+          <strong>Desktop notifications</strong>
+          <small>Show a notification when a link is queued or fails.</small>
+        </span>
+      </label>
+    </section>
+
+    <div class="actions">
+      <button id="save" class="primary" type="button">Save settings</button>
+      <span id="save-status" class="status"></span>
+    </div>
+
+    <footer class="foot">
+      <span id="version">EthOS NAS Downloader</span>
+      <span>Keyboard shortcut: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> sends the current tab.</span>
+    </footer>
+  </main>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
