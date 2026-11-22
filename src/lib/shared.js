@@ -68,6 +68,35 @@ export function hostOf(url) {
   }
 }
 
+/**
+ * Normalise the category list from `GET /api/downloads/config`.
+ *
+ * The endpoint returns `[{name, save_path}]`; older builds returned plain
+ * strings, so both shapes are accepted. Names are deduped case-insensitively
+ * and capped exactly like the NAS does (`download_config.norm_categories`), so
+ * the popup shows the same list the Download Manager does.
+ */
+export function normCategoryList(raw) {
+  const out = [];
+  const seen = new Set();
+  for (const item of Array.isArray(raw) ? raw : []) {
+    const source = typeof item === "string" ? { name: item } : item;
+    const name = String(source?.name || "").trim().slice(0, 64);
+    if (!name || seen.has(name.toLowerCase())) continue;
+    seen.add(name.toLowerCase());
+    out.push({ name, save_path: String(source?.save_path || "").trim().slice(0, 4096) });
+    if (out.length >= 50) break;
+  }
+  return out;
+}
+
+/** Label used in the category pickers: "movies — /mnt/media/movies". */
+export function categoryLabel(entry) {
+  const name = String(entry?.name || "");
+  const savePath = String(entry?.save_path || "");
+  return savePath ? `${name} — ${savePath}` : name;
+}
+
 /** Lower-case file extension without the dot, or "" when there is none. */
 export function extensionOf(url) {
   let pathname;

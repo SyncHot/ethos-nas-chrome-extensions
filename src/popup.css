@@ -149,6 +149,15 @@ body {
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field > span { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
 
+.field-row { display: flex; align-items: center; gap: 6px; }
+.field-row select { flex: 1; min-width: 0; }
+.field-row .icon-btn { flex: 0 0 auto; }
+.field-row .icon-btn.busy { color: var(--accent); border-color: var(--accent); animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hint { margin: 0; color: var(--muted); font-size: 10.5px; }
+.hint.warn { color: var(--warn); }
+
 input[type="text"], select {
   width: 100%;
   padding: 8px 10px;

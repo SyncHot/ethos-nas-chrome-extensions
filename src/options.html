@@ -69,10 +69,15 @@
     <section class="card">
       <h2>Defaults</h2>
       <div class="grid2">
-        <label class="field">
+        <div class="field">
           <span>Category</span>
-          <select id="category"></select>
-        </label>
+          <div class="field-row">
+            <select id="category" aria-label="Category"></select>
+            <button id="refresh-categories" class="refresh" type="button"
+                    title="Refresh categories from the Download Manager"
+                    aria-label="Refresh categories">↻</button>
+          </div>
+        </div>
         <label class="field">
           <span>Folder</span>
           <input id="folder" type="text" placeholder="NAS default download folder" autocomplete="off" spellcheck="false">

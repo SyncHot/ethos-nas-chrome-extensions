@@ -9,6 +9,7 @@ import {
   classifyLink,
   fileNameFromUrl,
   isNasUrl,
+  normCategoryList,
   normalizeNasUrl,
 } from "./lib/shared.js";
 
@@ -409,15 +410,32 @@ async function login(username, password) {
 }
 
 async function getConfig() {
-  const config = await api("/api/downloads/config");
-  return {
-    ok: true,
-    categories: (config?.categories || [])
-      .map((entry) => (typeof entry === "string" ? entry : entry?.name))
-      .filter(Boolean),
-    downloadDir: config?.download_dir || "",
-    provider: config?.debrid?.provider || "",
-  };
+  try {
+    const config = await api("/api/downloads/config");
+    const result = {
+      ok: true,
+      categories: normCategoryList(config?.categories),
+      downloadDir: config?.download_dir || "",
+      provider: config?.debrid?.provider || "",
+      fetchedAt: Date.now(),
+    };
+    // Keep the last good answer so the popup can render the Download Manager's
+    // categories instantly (and while the NAS is unreachable).
+    await chrome.storage.local.set({ nasConfig: result });
+    return result;
+  } catch (error) {
+    const stored = await chrome.storage.local.get("nasConfig");
+    const cached = stored?.nasConfig || {};
+    return {
+      ok: false,
+      error: error?.message || String(error),
+      stale: true,
+      categories: normCategoryList(cached.categories),
+      downloadDir: cached.downloadDir || "",
+      provider: cached.provider || "",
+      fetchedAt: Number(cached.fetchedAt || 0),
+    };
+  }
 }
 
 // ── Keyboard shortcut ────────────────────────────────────────────────────────

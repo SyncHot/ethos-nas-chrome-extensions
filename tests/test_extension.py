@@ -126,7 +126,8 @@ def main() -> int:
     check("shared settings module exists", shared.is_file())
     if shared.is_file():
         text = shared.read_text(encoding="utf-8")
-        for symbol in ("DEFAULT_SETTINGS", "classifyLink", "normalizeNasUrl", "HOSTER_DOMAINS"):
+        for symbol in ("DEFAULT_SETTINGS", "classifyLink", "normalizeNasUrl", "HOSTER_DOMAINS",
+                       "normCategoryList", "categoryLabel"):
             check(f"shared.js exports {symbol}", f"export" in text and symbol in text)
 
     # The README is the install guide — keep it.

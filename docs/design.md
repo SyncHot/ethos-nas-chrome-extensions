@@ -43,6 +43,19 @@ existing downloads router.
   history: [{ts, url, name, ok, error}]   # newest first, capped at 25 }
 ```
 
+`chrome.storage.local` → key `nasConfig` (category cache, written by the worker after
+every successful `GET /api/downloads/config`):
+
+```
+{ ok: true, categories: [{name, save_path}], downloadDir, provider, fetchedAt }
+```
+
+- `categories` mirrors the Download Manager list (same normalisation: unique names,
+  cap 50). The popup renders it cache-first and re-fetches on open; the options page
+  re-fetches on focus and through the ↻ button next to the picker. A failed fetch
+  returns the cache with `stale: true` instead of an empty list.
+- A default `category` missing from a **fresh** list is cleared; while the list is
+  cached/stale it stays visible and flagged "no longer on the NAS".
 - `apiKey` is the per-user `ethos_…` key from `users.json` (same key the Android apps use).
   The password entered on the options page is only used for `POST /api/auth/login` and is
   never stored.
@@ -109,6 +122,7 @@ All requests carry `Authorization: Bearer <apiKey>` and are made from the servic
 - [x] Manifest V3 + icons + packaging script
 - [x] Service worker: context menus, capture, API client, message router, notifications
 - [x] Popup: add link, page-links picker, category/folder, recent history, status pill
+- [x] Categories mirror the Download Manager: cache-first render, refresh button, stale-default cleanup (1.0.2)
 - [x] Options: URL, password sign-in → API key, key paste/forget, defaults, capture toggles
 - [x] Content script: anchor collection + magnet/file-link click interception
 - [x] Static guard test (`tests/test_extension.py`, CI)

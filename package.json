@@ -1,6 +1,6 @@
 {
   "name": "ethos-nas-chrome-extensions",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Chromium extension that sends links, magnets and browser downloads to the EthOS NAS Download Manager.",
   "repository": {

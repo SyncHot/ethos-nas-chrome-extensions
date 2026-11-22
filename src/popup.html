@@ -38,10 +38,16 @@
 
     <details class="advanced">
       <summary>Destination</summary>
-      <label class="field">
+      <div class="field">
         <span>Category</span>
-        <select id="category"></select>
-      </label>
+        <div class="field-row">
+          <select id="category" aria-label="Category"></select>
+          <button id="refresh-categories" class="icon-btn" type="button"
+                  title="Refresh categories from the Download Manager"
+                  aria-label="Refresh categories">↻</button>
+        </div>
+        <p id="category-note" class="hint"></p>
+      </div>
       <label class="field">
         <span>Folder</span>
         <input id="folder" type="text" placeholder="NAS default download folder" autocomplete="off" spellcheck="false">

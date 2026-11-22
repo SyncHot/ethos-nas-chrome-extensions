@@ -61,7 +61,17 @@ The options page opens on first install.
    exchanges the session for your long-lived API key and never stores the password — or
    paste a key from **NAS → Settings → Security → API key**.
 3. **Test connection** should report the number of tasks.
-4. Optional: pick a default category (read from the NAS download settings) and folder.
+4. Optional: pick a default category and folder.
+
+### Categories
+
+The category dropdown is a live mirror of **Download Manager → Settings → Categories**
+(`GET /api/downloads/config`). Every popup open re-reads the NAS list, the options tab
+refreshes it when it regains focus, and the ↻ button next to the picker forces a reload —
+so categories you add, rename or remove in the Download Manager show up without
+reinstalling the extension. The list is cached in `chrome.storage.local` (key
+`nasConfig`), so it still renders while the NAS is unreachable, and a default category
+that no longer exists on the NAS is cleared instead of being silently ignored.
 
 The API key is sent as `Authorization: Bearer …`; it is the same per-user key the Android
 apps use, and it is never put in a URL.

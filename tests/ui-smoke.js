@@ -43,6 +43,7 @@ const STUB = `
     },
   };
   window.__store = store;
+  if (window.__settingsOverride) Object.assign(store.settings, window.__settingsOverride);
   window.__sent = [];
   window.chrome = {
     runtime: {
@@ -53,8 +54,13 @@ const STUB = `
       sendMessage: (msg) => {
         window.__sent.push(msg);
         if (msg.type === "test") return Promise.resolve({ ok: true, summary: { active: 0, total: 3 } });
-        if (msg.type === "config") return Promise.resolve({
-          ok: true, categories: ["movies", "tv"], provider: "alldebrid", downloadDir: "/mnt/downloads",
+        if (msg.type === "config") return Promise.resolve(window.__configResponse || {
+          ok: true,
+          categories: [
+            { name: "movies", save_path: "/mnt/media/movies" },
+            { name: "tv", save_path: "" },
+          ],
+          provider: "alldebrid", downloadDir: "/mnt/downloads", fetchedAt: Date.now(),
         });
         if (msg.type === "send") return Promise.resolve({
           ok: true,
@@ -173,6 +179,17 @@ async function run(base) {
       await page.$eval("#setup", (el) => el.classList.contains("hidden")));
     check("popup: categories loaded",
       await page.$$eval("#category option", (options) => options.map((o) => o.value).includes("movies")));
+    check("popup: category label shows the destination path",
+      await page.$$eval("#category option", (options) => {
+        const movie = options.find((option) => option.value === "movies");
+        return Boolean(movie && movie.textContent.includes("/mnt/media/movies"));
+      }));
+    check("popup: category note names the Download Manager",
+      (await page.$eval("#category-note", (el) => el.textContent)).includes("Download Manager"));
+    await page.$eval(".advanced", (el) => { el.open = true; });
+    await page.click("#refresh-categories");
+    await page.waitForFunction(() => window.__sent.filter((m) => m.type === "config").length >= 2);
+    check("popup: refresh button re-reads categories", true);
     check("popup: history rendered", (await page.$$("#history li")).length === 1);
     check("popup: footer shows NAS URL",
       (await page.$eval("#footer-note", (el) => el.textContent)).includes("127.0.0.1:9000"));
@@ -209,6 +226,33 @@ async function run(base) {
       bulk.urls.length === 2 && bulk.urls.some((url) => url.startsWith("magnet:")), JSON.stringify(bulk));
     check("popup: still no page errors", errors.length === 0, errors.join("; "));
 
+    // A default category removed in the Download Manager must not survive.
+    const pruned = await browser.newPage();
+    await pruned.evaluateOnNewDocument(() => { window.__settingsOverride = { category: "gone" }; });
+    await pruned.goto(`${base}/src/popup.html`, { waitUntil: "networkidle0" });
+    await pruned.waitForFunction(() => document.querySelector("#status")?.textContent === "online");
+    await pruned.waitForFunction(() => window.__store.settings.category === "");
+    check("popup: stale default category cleared",
+      await pruned.evaluate(() => window.__store.settings.category === ""));
+    check("popup: stale default no longer offered",
+      await pruned.$$eval("#category option", (list) => !list.some((option) => option.value === "gone")));
+
+    // When the config call fails, the cached Download Manager list is shown.
+    const offline = await browser.newPage();
+    await offline.evaluateOnNewDocument(() => {
+      window.__configResponse = {
+        ok: false, stale: true, error: "offline",
+        categories: [{ name: "archive", save_path: "/mnt/archive" }],
+        provider: "alldebrid", downloadDir: "/mnt/downloads", fetchedAt: Date.now() - 120000,
+      };
+    });
+    await offline.goto(`${base}/src/popup.html`, { waitUntil: "networkidle0" });
+    await offline.waitForFunction(() => document.querySelector("#status")?.textContent === "online");
+    check("popup: cached categories kept when the NAS is unreachable",
+      await offline.$$eval("#category option", (list) => list.some((option) => option.value === "archive")));
+    check("popup: stale category note warns",
+      (await offline.$eval("#category-note", (el) => el.textContent)).toLowerCase().includes("cached"));
+
     // ── Options ────────────────────────────────────────────────────────────
     const options = await browser.newPage();
     const optionErrors = [];
@@ -225,6 +269,14 @@ async function run(base) {
     check("options: username loaded", (await options.$eval("#username", (el) => el.value)) === "marcin");
     check("options: categories loaded",
       await options.$$eval("#category option", (list) => list.map((o) => o.value).includes("tv")));
+    check("options: category label shows the destination path",
+      await options.$$eval("#category option", (list) => {
+        const movie = list.find((option) => option.value === "movies");
+        return Boolean(movie && movie.textContent.includes("/mnt/media/movies"));
+      }));
+    await options.click("#refresh-categories");
+    await options.waitForFunction(() => window.__sent.filter((m) => m.type === "config").length >= 2);
+    check("options: refresh button re-reads categories", true);
     check("options: version shown",
       (await options.$eval("#version", (el) => el.textContent)).includes("v1.0.0"));
 

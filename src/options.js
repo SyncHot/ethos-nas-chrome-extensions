@@ -1,9 +1,14 @@
-import { DEFAULT_SETTINGS, normalizeNasUrl } from "./lib/shared.js";
+import {
+  DEFAULT_SETTINGS,
+  categoryLabel,
+  normCategoryList,
+  normalizeNasUrl,
+} from "./lib/shared.js";
 
 const $ = (id) => document.getElementById(id);
 
 let settings = { ...DEFAULT_SETTINGS };
-let config = { categories: [], provider: "", downloadDir: "" };
+let config = { categories: [], provider: "", downloadDir: "", stale: false, fetchedAt: 0 };
 
 function setStatus(el, kind, text) {
   el.className = `status ${kind || ""}`.trim();
@@ -62,13 +67,17 @@ function renderCategories() {
 
   select.append(option("", "Default (NAS download folder)"));
   const seen = new Set([""]);
-  for (const name of config.categories) {
-    if (seen.has(name)) continue;
-    seen.add(name);
-    select.append(option(name, name));
+  for (const entry of config.categories) {
+    const key = entry.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    select.append(option(entry.name, categoryLabel(entry)));
   }
-  if (settings.category && !seen.has(settings.category)) {
-    select.append(option(settings.category, settings.category));
+  // Cached data may predate a rename/removal on the NAS — keep the saved
+  // default visible (flagged) until a fresh config confirms it is gone.
+  const fallback = String(settings.category || "").toLowerCase();
+  if (fallback && !seen.has(fallback)) {
+    select.append(option(settings.category, `${settings.category} — no longer on the NAS`));
   }
   select.value = settings.category || "";
 }
@@ -76,11 +85,28 @@ function renderCategories() {
 function renderConfigHint() {
   const hint = $("config-hint");
   hint.textContent = "";
-  if (!config.downloadDir) {
-    hint.textContent = "Categories are read from the NAS download settings.";
+  if (!settings.apiKey) {
+    hint.textContent = "Categories are read from the NAS Download Manager once an API key is stored.";
     return;
   }
-  hint.append(`Download folder on the NAS: ${config.downloadDir}`);
+  if (config.stale) {
+    const when = config.fetchedAt ? ` (refreshed ${relativeTime(config.fetchedAt)})` : "";
+    hint.append(`Categories cached${when} — the NAS is unreachable.`);
+    hint.append(" They refresh automatically when the NAS is back.");
+    return;
+  }
+  const count = config.categories.length;
+  if (config.fetchedAt) {
+    hint.append(
+      count
+        ? `${count} categor${count === 1 ? "y" : "ies"} from the NAS Download Manager (refresh ↻).`
+        : "No categories on the NAS — add them in Download Manager → Settings.",
+    );
+  } else {
+    hint.append("Loading categories from the NAS Download Manager…");
+  }
+  if (!config.downloadDir) return;
+  hint.append(` Default folder: ${config.downloadDir}`);
   if (config.provider) {
     hint.append(` · debrid provider: ${config.provider}`);
     if (config.provider !== "alldebrid") {
@@ -89,6 +115,14 @@ function renderConfigHint() {
   } else {
     hint.append(" · no debrid provider (magnets and file hosts will not download)");
   }
+}
+
+function relativeTime(ts) {
+  const seconds = Math.max(0, Math.round((Date.now() - Number(ts || 0)) / 1000));
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h ago`;
+  return `${Math.round(seconds / 86400)}d ago`;
 }
 
 function fillForm() {
@@ -118,20 +152,78 @@ function currentNasUrl() {
 
 async function loadConfig() {
   if (!settings.apiKey) return;
+  let response;
   try {
-    const response = await chrome.runtime.sendMessage({ type: "config" });
-    if (!response?.ok) return;
-    config = {
-      categories: response.categories || [],
-      provider: response.provider || "",
-      downloadDir: response.downloadDir || "",
-    };
-    renderCategories();
-    renderConfigHint();
-  } catch {
-    // Offline / not configured yet — keep the stored values.
+    response = await chrome.runtime.sendMessage({ type: "config" });
+  } catch (error) {
+    response = { ok: false, stale: true, error: error?.message || String(error) };
+  }
+  await applyConfig(response);
+  renderCategories();
+  renderConfigHint();
+}
+
+/** Render the last cached categories immediately, before the network call. */
+async function loadCachedConfig() {
+  const stored = await chrome.storage.local.get("nasConfig");
+  if (!stored?.nasConfig) return;
+  config = {
+    categories: normCategoryList(stored.nasConfig.categories),
+    provider: stored.nasConfig.provider || "",
+    downloadDir: stored.nasConfig.downloadDir || "",
+    stale: false,
+    fetchedAt: Number(stored.nasConfig.fetchedAt || 0),
+  };
+  renderCategories();
+  renderConfigHint();
+}
+
+async function applyConfig(response) {
+  if (!response || typeof response !== "object") return;
+  config = {
+    categories: normCategoryList(response.categories),
+    provider: response.provider || "",
+    downloadDir: response.downloadDir || "",
+    stale: response.ok === false && response.stale !== false,
+    fetchedAt: Number(response.fetchedAt || 0),
+  };
+
+  // The NAS list is authoritative: when the default category was renamed or
+  // removed in the Download Manager, forget it instead of sending it on every
+  // download (the NAS would ignore it and use the download folder anyway).
+  const wanted = String(settings.category || "").trim();
+  if (response.ok === true && wanted) {
+    const exists = config.categories.some(
+      (entry) => entry.name.toLowerCase() === wanted.toLowerCase(),
+    );
+    if (!exists) {
+      await persist({ category: "" });
+      setStatus($("save-status"), "warn", `Category "${wanted}" no longer exists on the NAS — cleared.`);
+    }
   }
 }
+
+async function refreshCategories() {
+  const button = $("refresh-categories");
+  if (button.disabled) return;
+  button.disabled = true;
+  button.classList.add("busy");
+  try {
+    await loadConfig();
+  } finally {
+    button.disabled = false;
+    button.classList.remove("busy");
+  }
+}
+
+$("refresh-categories").addEventListener("click", () => void refreshCategories());
+
+// The options page lives in a normal tab for a long time: re-read the list when
+// the user comes back from the Download Manager, so renames/additions show up
+// without a page reload.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && settings.apiKey) void loadConfig();
+});
 
 // ── Connection ───────────────────────────────────────────────────────────────
 
@@ -281,6 +373,7 @@ $("save").addEventListener("click", () => {
 
 void (async () => {
   await readSettings();
+  await loadCachedConfig();
   fillForm();
   $("version").textContent = `EthOS NAS Downloader v${chrome.runtime.getManifest().version}`;
   await loadConfig();
