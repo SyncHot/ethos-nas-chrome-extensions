@@ -42,16 +42,19 @@ No build step: the files are loaded as-is. No remote code, no analytics.
 ## Install
 
 1. Download `ethos-nas-downloader.zip` from the
-   [latest release](https://github.com/SyncHot/ethos-nas-chrome-extensions/releases/latest)
-   — the same link is on the NAS under **Settings → Updates**.
+   [latest release](https://github.com/SyncHot/ethos-nas-chrome-extensions/releases/latest),
+   or use the **Settings → Updates → Browser extension** card on the NAS (it
+   serves the zip deployed there).
 2. On the machine that runs the browser, unpack the zip.
 3. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick
    the unpacked folder.
 
 To build it yourself instead: `python3 package.py` writes
 `dist/ethos-nas-downloader-<version>.zip`. Pushing a `vX.Y.Z` tag publishes it as a
-GitHub release (`.github/workflows/release.yml`) with the stable file name the NAS
-links to.
+GitHub release (`.github/workflows/release.yml`) with the stable file name
+`ethos-nas-downloader.zip`. For the NAS Updates card, copy the versioned zip into
+`apks/extension/` in the EthOS checkout (untracked, like the APK folders) — the newest
+semantic version wins; `ETHOS_EXTENSION_ZIP_PATH` overrides the location.
 
 The options page opens on first install.
 
