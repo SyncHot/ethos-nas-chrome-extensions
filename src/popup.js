@@ -443,16 +443,23 @@ async function applyConfig(response) {
   const wanted = String(settings.category || "").trim().toLowerCase();
   if (response.ok === true && wanted) {
     const exists = config.categories.some((entry) => entry.name.toLowerCase() === wanted);
-    if (!exists) await persistCategory("");
+    if (!exists) await persistDestination({ category: "" });
   }
 }
 
-/** Store the default category without dropping other settings keys. */
-async function persistCategory(name) {
-  const stored = await chrome.storage.local.get("settings");
-  const next = { ...DEFAULT_SETTINGS, ...(stored.settings || {}), category: name };
-  await chrome.storage.local.set({ settings: next });
-  settings = next;
+/** Store a destination default without dropping other settings keys. */
+let destinationWrite = Promise.resolve();
+function persistDestination(patch) {
+  settings = { ...settings, ...patch };
+  // Serialise read-merge-write so a quick category + folder change cannot
+  // overwrite one of them with a stale copy of the store.
+  destinationWrite = destinationWrite.then(async () => {
+    const stored = await chrome.storage.local.get("settings");
+    const next = { ...DEFAULT_SETTINGS, ...(stored.settings || {}), ...patch };
+    await chrome.storage.local.set({ settings: next });
+    settings = { ...settings, ...next };
+  }).catch(() => {});
+  return destinationWrite;
 }
 
 function renderCategories() {
@@ -497,16 +504,22 @@ function renderCategoryNote() {
     note.textContent = config.fetchedAt
       ? `Showing cached categories (refreshed ${relativeTime(config.fetchedAt)}) — NAS unreachable.`
       : "Could not load categories from the NAS.";
-    return;
-  }
-  if (!config.fetchedAt) {
+  } else if (!config.fetchedAt) {
     note.textContent = "Loading categories from the Download Manager…";
-    return;
+  } else {
+    const count = config.categories.length;
+    note.textContent = count
+      ? `${count} categor${count === 1 ? "y" : "ies"} from the Download Manager.`
+      : "No categories on the NAS — add them in Download Manager → Settings.";
+    if (settings.category) {
+      note.append(" Picked categories are saved as the default for right-click sends "
+        + "and captured downloads.");
+    }
   }
-  const count = config.categories.length;
-  note.textContent = count
-    ? `${count} categor${count === 1 ? "y" : "ies"} from the Download Manager.`
-    : "No categories on the NAS — add them in Download Manager → Settings.";
+  if (settings.category && $("folder").value.trim()) {
+    note.classList.add("warn");
+    note.append(" The folder field overrides the category.");
+  }
 }
 
 async function refreshCategories() {
@@ -523,6 +536,18 @@ async function refreshCategories() {
 }
 
 $("refresh-categories").addEventListener("click", () => void refreshCategories());
+
+// The pickers double as send defaults: a right-click menu item, an intercepted
+// link or a captured browser download has no popup open, so it can only use
+// what is stored. Persist the choice as soon as it is made.
+$("category").addEventListener("change", () => {
+  void persistDestination({ category: $("category").value });
+  renderCategoryNote();
+});
+$("folder").addEventListener("change", () => {
+  void persistDestination({ folder: $("folder").value.trim() });
+  renderCategoryNote();
+});
 
 function renderFooter() {
   const note = $("footer-note");

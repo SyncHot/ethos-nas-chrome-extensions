@@ -244,7 +244,7 @@ async function postTask(payload) {
   });
 }
 
-async function postTorrent(url, { name, folder }) {
+async function postTorrent(url, { name, folder, category }) {
   const response = await fetch(url, { credentials: "include", cache: "no-store" });
   if (!response.ok) throw new Error(`Could not fetch the .torrent (HTTP ${response.status})`);
 
@@ -260,8 +260,11 @@ async function postTorrent(url, { name, folder }) {
   const form = new FormData();
   const filename = name || fileNameFromUrl(url) || "upload.torrent";
   form.append("files", new Blob([buffer], { type: "application/x-bittorrent" }), filename);
-  const query = folder ? `?folder=${encodeURIComponent(folder)}` : "";
-  return api(`/api/downloads/tasks/torrent${query}`, { method: "POST", body: form });
+  const query = new URLSearchParams();
+  if (folder) query.set("folder", folder);
+  if (category) query.set("category", category);
+  const suffix = query.toString() ? `?${query}` : "";
+  return api(`/api/downloads/tasks/torrent${suffix}`, { method: "POST", body: form });
 }
 
 async function sendOne(url, options = {}) {
@@ -278,7 +281,7 @@ async function sendOne(url, options = {}) {
   if (kind === "torrent") {
     // Fetch the .torrent here so the NAS never has to guess whether the URL
     // points at a torrent or at the file itself.
-    return postTorrent(url, { name: name || fileNameFromUrl(url), folder });
+    return postTorrent(url, { name: name || fileNameFromUrl(url), folder, category });
   }
 
   return postTask({ url, category: category || undefined, folder: folder || undefined, name: name || undefined });

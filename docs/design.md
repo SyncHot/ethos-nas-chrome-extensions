@@ -123,6 +123,9 @@ All requests carry `Authorization: Bearer <apiKey>` and are made from the servic
 - [x] Service worker: context menus, capture, API client, message router, notifications
 - [x] Popup: add link, page-links picker, category/folder, recent history, status pill
 - [x] Categories mirror the Download Manager: cache-first render, refresh button, stale-default cleanup (1.0.2)
+- [x] Category is a send default (1.0.3): a pick in the popup is saved immediately, so
+      right-click sends and captured downloads use it; `.torrent` uploads forward it as
+      `?category=` instead of dropping it
 - [x] Options: URL, password sign-in → API key, key paste/forget, defaults, capture toggles
 - [x] Content script: anchor collection + magnet/file-link click interception
 - [x] Static guard test (`tests/test_extension.py`, CI)

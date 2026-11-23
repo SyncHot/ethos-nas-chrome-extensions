@@ -135,6 +135,22 @@ def main() -> int:
     check("packaging script exists", (EXT / "package.py").is_file())
     check("icon generator exists", (EXT / "scripts" / "make-icons.py").is_file())
 
+    # ── Destination handling ───────────────────────────────────────────────
+    # Every send path must forward the picked category: right-click menus and
+    # captured downloads use the stored default, .torrent uploads pass it as a
+    # query parameter (the NAS applies folder > category > download_dir).
+    background_text = (EXT / "src" / "background.js").read_text(encoding="utf-8")
+    check(".torrent uploads forward the category",
+          'query.set("category", category)' in background_text)
+    check("postTorrent receives the category",
+          "postTorrent(url, { name: name || fileNameFromUrl(url), folder, category })"
+          in background_text)
+    popup_text = (EXT / "src" / "popup.js").read_text(encoding="utf-8")
+    check("popup persists the picked category",
+          'persistDestination({ category: $("category").value })' in popup_text)
+    check("popup persists the folder default",
+          'persistDestination({ folder: $("folder").value.trim() })' in popup_text)
+
     # ── No secrets committed ───────────────────────────────────────────────
     leaked_files = []
     for path in EXT.rglob("*"):

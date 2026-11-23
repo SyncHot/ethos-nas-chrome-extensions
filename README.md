@@ -73,6 +73,12 @@ reinstalling the extension. The list is cached in `chrome.storage.local` (key
 `nasConfig`), so it still renders while the NAS is unreachable, and a default category
 that no longer exists on the NAS is cleared instead of being silently ignored.
 
+Picking a category (or editing the folder) in the popup saves it as the **send default**
+immediately — a right-click *Send link to EthOS NAS*, an intercepted link or a captured
+browser download happens with no popup open, so it uses the stored choice. `.torrent`
+uploads carry the category too. An explicit folder always wins over a category, exactly
+like in the Download Manager.
+
 The API key is sent as `Authorization: Bearer …`; it is the same per-user key the Android
 apps use, and it is never put in a URL.
 

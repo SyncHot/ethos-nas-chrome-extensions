@@ -190,6 +190,30 @@ async function run(base) {
     await page.click("#refresh-categories");
     await page.waitForFunction(() => window.__sent.filter((m) => m.type === "config").length >= 2);
     check("popup: refresh button re-reads categories", true);
+
+    // A picker change must persist: right-click sends and captured downloads
+    // have no popup open and can only use the stored defaults.
+    await page.select("#category", "tv");
+    await page.waitForFunction(() => window.__store.settings.category === "tv");
+    check("popup: category choice is saved as the send default",
+      await page.evaluate(() => window.__store.settings.category === "tv"));
+    check("popup: category note explains the saved default",
+      (await page.$eval("#category-note", (el) => el.textContent)).includes("right-click"));
+    await page.$eval("#folder", (el) => {
+      el.value = "archive";
+      el.dispatchEvent(new Event("change"));
+    });
+    await page.waitForFunction(() => window.__store.settings.folder === "archive");
+    check("popup: folder is saved as the send default",
+      await page.evaluate(() => window.__store.settings.folder === "archive"));
+    check("popup: folder-overrides-category warning shown",
+      (await page.$eval("#category-note", (el) => el.textContent)).includes("overrides"));
+    await page.select("#category", "movies");
+    await page.$eval("#folder", (el) => {
+      el.value = "";
+      el.dispatchEvent(new Event("change"));
+    });
+    await page.waitForFunction(() => window.__store.settings.folder === "");
     check("popup: history rendered", (await page.$$("#history li")).length === 1);
     check("popup: footer shows NAS URL",
       (await page.$eval("#footer-note", (el) => el.textContent)).includes("127.0.0.1:9000"));
@@ -213,6 +237,8 @@ async function run(base) {
     const sent = await page.evaluate(() => window.__sent.filter((m) => m.type === "send"));
     check("popup: send message carries URL",
       sent.length === 1 && sent[0].urls[0] === "https://example.com/file.zip", JSON.stringify(sent));
+    check("popup: send message carries the category default",
+      sent.length === 1 && sent[0].options?.category === "movies", JSON.stringify(sent));
 
     await page.click('.tab[data-tab="links"]');
     await page.waitForFunction(() => document.querySelectorAll("#link-list li").length > 0);
