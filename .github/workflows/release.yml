@@ -1,0 +1,39 @@
+name: release
+
+# A pushed vX.Y.Z tag publishes the loadable ZIP twice: a versioned asset and
+# the stable `ethos-nas-downloader.zip` name. The stable name is what the NAS
+# Settings → Updates page links to through
+# /releases/latest/download/ethos-nas-downloader.zip.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the distributable zip
+        run: |
+          python3 package.py
+          cp dist/ethos-nas-downloader-*.zip dist/ethos-nas-downloader.zip
+
+      - name: Verify the tag matches the manifest version
+        run: |
+          VERSION="$(python3 -c 'import json;print(json.load(open("manifest.json"))["version"])')"
+          test "v$VERSION" = "$GITHUB_REF_NAME"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/ethos-nas-downloader.zip dist/ethos-nas-downloader-*.zip \
+            --title "EthOS NAS Downloader ${GITHUB_REF_NAME#v}" --generate-notes

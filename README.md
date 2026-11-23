@@ -41,16 +41,17 @@ No build step: the files are loaded as-is. No remote code, no analytics.
 
 ## Install
 
-1. Build the zip (or use the folder directly):
-
-   ```bash
-   python3 package.py
-   ```
-
-2. On the machine that runs the browser, unpack
-   `dist/ethos-nas-downloader-<version>.zip`.
+1. Download `ethos-nas-downloader.zip` from the
+   [latest release](https://github.com/SyncHot/ethos-nas-chrome-extensions/releases/latest)
+   — the same link is on the NAS under **Settings → Updates**.
+2. On the machine that runs the browser, unpack the zip.
 3. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick
    the unpacked folder.
+
+To build it yourself instead: `python3 package.py` writes
+`dist/ethos-nas-downloader-<version>.zip`. Pushing a `vX.Y.Z` tag publishes it as a
+GitHub release (`.github/workflows/release.yml`) with the stable file name the NAS
+links to.
 
 The options page opens on first install.
 
